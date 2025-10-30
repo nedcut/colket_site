@@ -3,62 +3,224 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colket Dining Table Layouts</title>
-  <link rel="preload" href="options.json" as="fetch" crossorigin="anonymous">
-  <link rel="stylesheet" href="styles.css">
-  <meta name="description" content="Tasteful, responsive viewer for Colket Dining Table SVG layouts with selectable configurations." />
+  <title>Colket Dining Table Planner</title>
+  <meta name="description" content="Interactive planner for exploring Colket dining table dimensions, leaves, and seating layouts." />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="site-header">
-    <h1>Colket Dining Table Layouts</h1>
-    <p class="tagline">Select a configuration to preview the detailed, to-scale SVG drawing.</p>
+    <div class="site-shell">
+      <h1>Colket Dining Table Planner</h1>
+      <p class="tagline">Adjust dimensions, experiment with leaves, and drag chairs to explore the perfect fit.</p>
+    </div>
   </header>
 
-  <main class="content">
-    <aside class="controls" aria-label="Controls">
-      <div class="control-group">
-        <label for="layoutSelect">Configuration</label>
-        <select id="layoutSelect" aria-describedby="configHelp" disabled></select>
-        <p id="configHelp" class="help">Choose among table sizes and seating layouts.</p>
-      </div>
+  <main class="layout-shell">
+    <aside class="control-panel" aria-label="Configuration">
+      <section class="panel-section">
+        <h2>Table</h2>
+        <div class="field">
+          <label for="tableLengthRange">Length</label>
+          <div class="field-stack">
+            <input id="tableLengthRange" type="range" min="84" max="150" step="1" value="120" data-sync="tableLengthInput" />
+            <div class="field-row">
+              <input id="tableLengthInput" type="number" min="60" max="180" step="0.5" value="120" />
+              <span class="unit">in</span>
+            </div>
+          </div>
+        </div>
 
-      <div class="control-row">
-        <button id="fitBtn" class="btn" type="button" title="Fit drawing to window (F)" disabled>Fit</button>
-        <div class="zoom-wrap">
+        <div class="field">
+          <label for="tableWidthRange">Width</label>
+          <div class="field-stack">
+            <input id="tableWidthRange" type="range" min="36" max="60" step="0.5" value="48" data-sync="tableWidthInput" />
+            <div class="field-row">
+              <input id="tableWidthInput" type="number" min="36" max="60" step="0.5" value="48" />
+              <span class="unit">in</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="tableShapeSelect">Edge style</label>
+          <select id="tableShapeSelect">
+            <option value="rounded">Rounded rectangle</option>
+            <option value="capsule" selected>Capsule ends</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="cornerRadiusRange">Corner radius (rounded only)</label>
+          <div class="field-stack">
+            <input id="cornerRadiusRange" type="range" min="0" max="8" step="0.5" value="2" data-sync="cornerRadiusInput" />
+            <div class="field-row">
+              <input id="cornerRadiusInput" type="number" min="0" max="8" step="0.5" value="2" />
+              <span class="unit">in</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="leafCountInput">Leaves</label>
+          <div class="field-row">
+            <input id="leafCountInput" type="number" min="0" max="3" step="1" value="0" />
+            <span class="unit">×</span>
+            <input id="leafLengthInput" type="number" min="0" max="36" step="0.5" value="18" />
+            <span class="unit">in</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="unitsPerInchRange">Drawing scale</label>
+          <div class="field-stack">
+            <input id="unitsPerInchRange" type="range" min="3" max="12" step="0.5" value="6" data-sync="unitsPerInchInput" />
+            <div class="field-row">
+              <input id="unitsPerInchInput" type="number" min="3" max="12" step="0.5" value="6" />
+              <span class="unit">px / in</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h2>Seating</h2>
+        <div class="field">
+          <label for="sideChairCountRange">Chairs per long side</label>
+          <div class="field-stack">
+            <input id="sideChairCountRange" type="range" min="0" max="5" step="1" value="4" data-sync="sideChairCountInput" />
+            <div class="field-row">
+              <input id="sideChairCountInput" type="number" min="0" max="5" step="1" value="4" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="endChairCountRange">Chairs per end</label>
+          <div class="field-stack">
+            <input id="endChairCountRange" type="range" min="0" max="2" step="1" value="1" data-sync="endChairCountInput" />
+            <div class="field-row">
+              <input id="endChairCountInput" type="number" min="0" max="2" step="1" value="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="chairWidthInput">Chair width</label>
+          <div class="field-row">
+            <input id="chairWidthInput" type="number" min="18" max="26" step="0.5" value="21" />
+            <span class="unit">in</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="chairDepthInput">Chair depth</label>
+          <div class="field-row">
+            <input id="chairDepthInput" type="number" min="18" max="28" step="0.5" value="22" />
+            <span class="unit">in</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="chairClearanceInput">Clearance from table</label>
+          <div class="field-row">
+            <input id="chairClearanceInput" type="number" min="0" max="24" step="0.5" value="8" />
+            <span class="unit">in</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="sideOffsetInput">Side edge offset</label>
+          <div class="field-row">
+            <input id="sideOffsetInput" type="number" min="0" max="24" step="0.5" value="6" />
+            <span class="unit">in</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="endOffsetInput">End edge offset</label>
+          <div class="field-row">
+            <input id="endOffsetInput" type="number" min="0" max="18" step="0.5" value="2.5" />
+            <span class="unit">in</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h2>Presets</h2>
+        <div class="preset-grid">
+          <button type="button" class="btn ghost" data-preset="A">102″ · 6 seats</button>
+          <button type="button" class="btn ghost" data-preset="B">93″ · 6 seats</button>
+          <button type="button" class="btn ghost" data-preset="C">120″ · 8 seats</button>
+          <button type="button" class="btn ghost" data-preset="D">111″ · 8 seats</button>
+          <button type="button" class="btn ghost" data-preset="E">138″ · 10 seats</button>
+          <button type="button" class="btn ghost" data-preset="F">129″ · 8 seats</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h2>Layout tools</h2>
+        <div class="field checkbox">
+          <label class="checkbox-label">
+            <input id="autoArrangeCheck" type="checkbox" checked />
+            <span>Auto arrange when settings change</span>
+          </label>
+        </div>
+        <div class="tool-buttons">
+          <button id="autoArrangeBtn" type="button" class="btn">Auto arrange now</button>
+          <button id="resetViewBtn" type="button" class="btn ghost">Center view</button>
+          <button id="addFreeChairBtn" type="button" class="btn ghost">Add floating chair</button>
+          <button id="clearManualBtn" type="button" class="btn ghost">Remove manual chairs</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="workspace" aria-label="Layout preview">
+      <div class="workspace-toolbar">
+        <div class="toolbar-group">
           <label for="zoomRange">Zoom</label>
-          <input id="zoomRange" type="range" min="0.25" max="2.5" step="0.05" value="1" disabled />
-          <output id="zoomOut" for="zoomRange">100%</output>
+          <input id="zoomRange" type="range" min="0.6" max="2.5" step="0.05" value="1" />
+        </div>
+        <div class="toolbar-metrics">
+          <span>Total length: <strong id="totalLengthOut">120″</strong></span>
+          <span>Seats: <strong id="seatCountOut">10</strong></span>
+          <span>Footprint: <strong id="footprintOut">120″ × 48″</strong></span>
         </div>
       </div>
 
-      <div class="control-row">
-        <a id="openRaw" class="btn ghost" aria-disabled="true" tabindex="-1">Open SVG</a>
-        <a id="download" class="btn" aria-disabled="true" tabindex="-1">Download</a>
+      <div class="canvas-frame" id="canvasFrame">
+        <svg id="layoutCanvas" viewBox="0 0 1600 1000" role="presentation" aria-hidden="true">
+          <defs>
+            <filter id="softShadow" x="-15%" y="-25%" width="130%" height="150%">
+              <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.18" />
+            </filter>
+            <pattern id="tableTexture" patternUnits="objectBoundingBox" width="1" height="1">
+              <rect width="100%" height="100%" fill="currentColor" fill-opacity="0.1" />
+            </pattern>
+          </defs>
+          <g id="gridLayer"></g>
+          <g id="contentLayer"></g>
+        </svg>
+        <div class="canvas-hint" id="canvasHint">
+          <p>Drag chairs or the table to tweak spacing. Double-click a floating chair to remove it.</p>
+          <button type="button" id="dismissHintBtn" class="btn ghost">Got it</button>
+        </div>
       </div>
 
-      <details class="notes" open>
-        <summary>Notes</summary>
+      <section class="workspace-notes">
+        <h2>Quick tips</h2>
         <ul>
-          <li>Scale: 1 in = 10 px.</li>
-          <li>chairs shown as 21″ wide (depth schematic).</li>
-          <li>Spacing along table sides is evenly distributed.</li>
+          <li>Hold <kbd>Shift</kbd> while dragging to constrain movement horizontally or vertically.</li>
+          <li>Use presets to jump between the options outlined in the provided write-up.</li>
+          <li>Toggle auto-arrange off to keep manual tweaks when updating individual dimensions.</li>
         </ul>
-      </details>
-    </aside>
-
-    <section class="stage-wrap">
-      <div id="stage" class="stage" data-state="loading" data-message="Loading configurations..." tabindex="0" aria-live="polite" aria-busy="true">
-        <img id="svgView" alt="Table layout drawing" hidden decoding="async" />
-        <noscript>This viewer requires JavaScript to load the table drawings.</noscript>
-      </div>
-      <div class="caption" id="caption" aria-live="polite"></div>
+      </section>
     </section>
   </main>
 
   <footer class="site-footer">
-    <small>&copy; <span id="year"></span> Colket Dining Room — Layout visualizer</small>
+    <small>&copy; <span id="year"></span> Colket Dining Room — Interactive planner</small>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
