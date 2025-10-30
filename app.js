@@ -1179,6 +1179,8 @@
     const units = state.table.unitsPerInch;
     const totalLengthPx = toPixels(totalLengthInches());
     const widthPx = toPixels(state.table.width);
+    const leafLengthPx = toPixels(state.table.leafLength);
+    const leafCount = state.table.leafCount;
     const shape = state.table.shape === "rounded" ? "rounded" : "capsule";
     const maxRadius = Math.min(totalLengthPx, widthPx) / 2;
     const cornerPx =
@@ -1196,6 +1198,17 @@
       x: state.table.position.x - totalLengthPx / 2,
       y: state.table.position.y - widthPx / 2,
     };
+
+    const leafSeams = [];
+    if (leafCount > 0 && leafLengthPx > 0) {
+      const leafSpan = leafLengthPx * leafCount;
+      const start = table.cx - leafSpan / 2;
+      for (let index = 0; index <= leafCount; index += 1) {
+        const seamX = clamp(start + index * leafLengthPx, table.x, table.x + table.width);
+        leafSeams.push(seamX);
+      }
+    }
+    table.leafSeams = leafSeams;
 
     const seatWidthPx = toPixels(state.seating.chairWidth);
     const seatDepthPx = toPixels(state.seating.chairDepth);
@@ -1353,7 +1366,9 @@
       outlinePath.classList.add("table-outline");
       outlinePath.setAttribute("d", pathData);
 
-      group.append(shapePath, outlinePath);
+      group.appendChild(shapePath);
+      appendLeafSeams(group, table);
+      group.appendChild(outlinePath);
       return group;
     }
 
@@ -1375,8 +1390,32 @@
     outline.setAttribute("rx", table.radius.toFixed(2));
     outline.setAttribute("ry", table.radius.toFixed(2));
 
-    group.append(rect, outline);
+    group.appendChild(rect);
+    appendLeafSeams(group, table);
+    group.appendChild(outline);
     return group;
+  }
+
+  function appendLeafSeams(group, table) {
+    if (!Array.isArray(table.leafSeams) || table.leafSeams.length === 0) {
+      return;
+    }
+    const top = table.y.toFixed(2);
+    const bottom = (table.y + table.height).toFixed(2);
+    table.leafSeams.forEach((x) => {
+      if (!Number.isFinite(x)) return;
+      const isNearLeft = Math.abs(x - table.x) < 0.5;
+      const isNearRight = Math.abs(table.x + table.width - x) < 0.5;
+      if (isNearLeft || isNearRight) return;
+      const line = createSvg("line");
+      line.classList.add("table-leaf-line");
+      const coord = x.toFixed(2);
+      line.setAttribute("x1", coord);
+      line.setAttribute("x2", coord);
+      line.setAttribute("y1", top);
+      line.setAttribute("y2", bottom);
+      group.appendChild(line);
+    });
   }
 
   function renderChair(chair) {
