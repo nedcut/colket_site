@@ -20,7 +20,14 @@
     canvasHint: document.getElementById("canvasHint"),
     dismissHintBtn: document.getElementById("dismissHintBtn"),
     year: document.getElementById("year"),
+    customPresetName: document.getElementById("customPresetName"),
+    savePresetBtn: document.getElementById("savePresetBtn"),
+    savedPresetSelect: document.getElementById("savedPresetSelect"),
+    loadPresetBtn: document.getElementById("loadPresetBtn"),
+    deletePresetBtn: document.getElementById("deletePresetBtn"),
   };
+
+  const CUSTOM_PRESET_STORAGE_KEY = "colketPlanner.customPresets.v1";
 
   const PRESETS = {
     A: { table: { baseLength: 102, leafCount: 0 }, seating: { sideCount: 2, endCount: 1 } },
@@ -61,6 +68,10 @@
     customChairs: new Map(),
     flags: {
       autoArrange: true,
+    },
+    customPresets: {
+      items: new Map(),
+      selectedId: null,
     },
   };
 
@@ -131,6 +142,7 @@
     setupControls();
     setupToolbar();
     setupPresets();
+    setupCustomPresets();
     setupCanvasInteractions();
     setupKeyboardShortcuts();
     scheduleRender();
@@ -247,6 +259,359 @@
         applyPreset(presetId);
       });
     });
+  }
+
+  function setupCustomPresets() {
+    hydrateCustomPresets();
+    refreshCustomPresetOptions();
+    updateCustomPresetControls();
+
+    if (refs.customPresetName) {
+      refs.customPresetName.addEventListener("input", () => {
+        updateCustomPresetControls();
+      });
+      refs.customPresetName.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          handleSaveCustomPreset();
+        }
+      });
+    }
+
+    if (refs.savePresetBtn) {
+      refs.savePresetBtn.addEventListener("click", () => {
+        handleSaveCustomPreset();
+      });
+    }
+
+    if (refs.savedPresetSelect) {
+      refs.savedPresetSelect.addEventListener("change", () => {
+        const value = refs.savedPresetSelect.value;
+        state.customPresets.selectedId = value || null;
+        updateCustomPresetControls();
+      });
+    }
+
+    if (refs.loadPresetBtn) {
+      refs.loadPresetBtn.addEventListener("click", () => {
+        loadSelectedCustomPreset();
+      });
+    }
+
+    if (refs.deletePresetBtn) {
+      refs.deletePresetBtn.addEventListener("click", () => {
+        deleteSelectedCustomPreset();
+      });
+    }
+  }
+
+  function hydrateCustomPresets() {
+    if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+      return;
+    }
+    state.customPresets.items.clear();
+    let stored;
+    try {
+      const raw = window.localStorage.getItem(CUSTOM_PRESET_STORAGE_KEY);
+      if (!raw) return;
+      stored = JSON.parse(raw);
+    } catch (error) {
+      console.warn("Unable to parse custom presets from storage.", error);
+      return;
+    }
+    if (!Array.isArray(stored)) return;
+    stored.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      const { id, name, snapshot } = entry;
+      if (typeof id !== "string" || typeof name !== "string") return;
+      if (!isValidPresetSnapshot(snapshot)) return;
+      state.customPresets.items.set(id, { name, snapshot });
+    });
+  }
+
+  function refreshCustomPresetOptions() {
+    if (!refs.savedPresetSelect) return;
+    const select = refs.savedPresetSelect;
+    const priorSelection = state.customPresets.selectedId;
+    select.replaceChildren();
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = state.customPresets.items.size ? "Choose custom preset" : "None saved yet";
+    select.appendChild(placeholder);
+
+    state.customPresets.items.forEach((entry, id) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = entry.name;
+      select.appendChild(option);
+    });
+
+    if (priorSelection && state.customPresets.items.has(priorSelection)) {
+      select.value = priorSelection;
+      state.customPresets.selectedId = priorSelection;
+    } else {
+      select.value = "";
+      state.customPresets.selectedId = null;
+    }
+  }
+
+  function updateCustomPresetControls() {
+    if (refs.customPresetName && refs.savePresetBtn) {
+      const hasName = refs.customPresetName.value.trim().length > 0;
+      refs.savePresetBtn.disabled = !hasName;
+    }
+    const hasSelection =
+      Boolean(state.customPresets.selectedId) && state.customPresets.items.has(state.customPresets.selectedId);
+    if (refs.loadPresetBtn) {
+      refs.loadPresetBtn.disabled = !hasSelection;
+    }
+    if (refs.deletePresetBtn) {
+      refs.deletePresetBtn.disabled = !hasSelection;
+    }
+  }
+
+  function handleSaveCustomPreset() {
+    if (!refs.customPresetName) return;
+    const name = refs.customPresetName.value.trim();
+    if (!name) return;
+    const snapshot = capturePresetSnapshot();
+    const existingId = findCustomPresetIdByName(name);
+    const id = existingId || generatePresetId();
+    state.customPresets.items.set(id, { name, snapshot });
+    state.customPresets.selectedId = id;
+    persistCustomPresets();
+    refreshCustomPresetOptions();
+    updateCustomPresetControls();
+  }
+
+  function capturePresetSnapshot() {
+    return {
+      table: {
+        shape: state.table.shape,
+        baseLength: state.table.baseLength,
+        width: state.table.width,
+        cornerRadius: state.table.cornerRadius,
+        leafLength: state.table.leafLength,
+        leafCount: state.table.leafCount,
+        unitsPerInch: state.table.unitsPerInch,
+      },
+      seating: {
+        sideCount: state.seating.sideCount,
+        endCount: state.seating.endCount,
+        chairWidth: state.seating.chairWidth,
+        chairDepth: state.seating.chairDepth,
+        clearance: state.seating.clearance,
+        sideOffset: state.seating.sideOffset,
+        endOffset: state.seating.endOffset,
+      },
+      flags: {
+        autoArrange: state.flags.autoArrange,
+      },
+    };
+  }
+
+  function applyPresetSnapshot(snapshot) {
+    if (!isValidPresetSnapshot(snapshot)) return;
+    const { table, seating, flags } = snapshot;
+    let touchedLayout = false;
+
+    if (table) {
+      if (typeof table.shape === "string") {
+        const nextShape = table.shape === "rounded" ? "rounded" : "capsule";
+        if (state.table.shape !== nextShape) {
+          state.table.shape = nextShape;
+          touchedLayout = true;
+        }
+      }
+      if (typeof table.baseLength === "number") {
+        const next = clamp(table.baseLength, 60, 180);
+        if (state.table.baseLength !== next) {
+          state.table.baseLength = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof table.width === "number") {
+        const next = clamp(table.width, 36, 60);
+        if (state.table.width !== next) {
+          state.table.width = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof table.cornerRadius === "number") {
+        const next = clamp(table.cornerRadius, 0, 8);
+        if (state.table.cornerRadius !== next) {
+          state.table.cornerRadius = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof table.leafLength === "number") {
+        const next = clamp(table.leafLength, 0, 36);
+        if (state.table.leafLength !== next) {
+          state.table.leafLength = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof table.leafCount === "number") {
+        const next = clamp(Math.round(table.leafCount), 0, 3);
+        if (state.table.leafCount !== next) {
+          state.table.leafCount = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof table.unitsPerInch === "number") {
+        const next = clamp(table.unitsPerInch, 3, 12);
+        if (Number.isFinite(next) && next > 0 && state.table.unitsPerInch !== next) {
+          const factor = next / state.table.unitsPerInch;
+          state.table.unitsPerInch = next;
+          scaleManualPositions(factor);
+          touchedLayout = true;
+        }
+      }
+    }
+
+    if (seating) {
+      if (typeof seating.sideCount === "number") {
+        const next = clamp(Math.round(seating.sideCount), 0, 5);
+        if (state.seating.sideCount !== next) {
+          state.seating.sideCount = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof seating.endCount === "number") {
+        const next = clamp(Math.round(seating.endCount), 0, 2);
+        if (state.seating.endCount !== next) {
+          state.seating.endCount = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof seating.chairWidth === "number") {
+        const next = clamp(seating.chairWidth, 18, 26);
+        if (state.seating.chairWidth !== next) {
+          state.seating.chairWidth = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof seating.chairDepth === "number") {
+        const next = clamp(seating.chairDepth, 18, 28);
+        if (state.seating.chairDepth !== next) {
+          state.seating.chairDepth = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof seating.clearance === "number") {
+        const next = clamp(seating.clearance, 0, 24);
+        if (state.seating.clearance !== next) {
+          state.seating.clearance = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof seating.sideOffset === "number") {
+        const next = clamp(seating.sideOffset, 0, 24);
+        if (state.seating.sideOffset !== next) {
+          state.seating.sideOffset = next;
+          touchedLayout = true;
+        }
+      }
+      if (typeof seating.endOffset === "number") {
+        const next = clamp(seating.endOffset, 0, 18);
+        if (state.seating.endOffset !== next) {
+          state.seating.endOffset = next;
+          touchedLayout = true;
+        }
+      }
+    }
+
+    if (flags && typeof flags === "object" && typeof flags.autoArrange === "boolean") {
+      if (state.flags.autoArrange !== flags.autoArrange) {
+        state.flags.autoArrange = flags.autoArrange;
+        touchedLayout = true;
+      }
+    }
+
+    state.manual.positions.clear();
+    state.customChairs.clear();
+    state.manual.selectedId = null;
+    touchedLayout = true;
+
+    syncControlValues();
+
+    if (touchedLayout) {
+      triggerLayout();
+    } else {
+      scheduleRender();
+    }
+  }
+
+  function loadSelectedCustomPreset() {
+    if (!state.customPresets.selectedId) return;
+    const entry = state.customPresets.items.get(state.customPresets.selectedId);
+    if (!entry) return;
+    applyPresetSnapshot(entry.snapshot);
+  }
+
+  function deleteSelectedCustomPreset() {
+    if (!state.customPresets.selectedId) return;
+    if (!state.customPresets.items.has(state.customPresets.selectedId)) return;
+    state.customPresets.items.delete(state.customPresets.selectedId);
+    state.customPresets.selectedId = null;
+    persistCustomPresets();
+    refreshCustomPresetOptions();
+    updateCustomPresetControls();
+  }
+
+  function persistCustomPresets() {
+    if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+      return;
+    }
+    const payload = [];
+    state.customPresets.items.forEach((entry, id) => {
+      payload.push({ id, name: entry.name, snapshot: entry.snapshot });
+    });
+    try {
+      window.localStorage.setItem(CUSTOM_PRESET_STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.warn("Unable to persist custom presets.", error);
+    }
+  }
+
+  function findCustomPresetIdByName(name) {
+    const target = name.toLowerCase();
+    for (const [id, entry] of state.customPresets.items) {
+      if (entry.name.toLowerCase() === target) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  function isValidPresetSnapshot(candidate) {
+    if (!candidate || typeof candidate !== "object") return false;
+    const { table, seating, flags } = candidate;
+    if (!table || typeof table !== "object") return false;
+    if (!seating || typeof seating !== "object") return false;
+    const tableKeys = ["baseLength", "width", "cornerRadius", "leafLength", "leafCount", "unitsPerInch"];
+    for (const key of tableKeys) {
+      if (table[key] != null && typeof table[key] !== "number") {
+        return false;
+      }
+    }
+    if (table.shape != null && typeof table.shape !== "string") return false;
+    const seatingKeys = ["sideCount", "endCount", "chairWidth", "chairDepth", "clearance", "sideOffset", "endOffset"];
+    for (const key of seatingKeys) {
+      if (seating[key] != null && typeof seating[key] !== "number") {
+        return false;
+      }
+    }
+    if (flags != null) {
+      if (typeof flags !== "object") return false;
+      if (flags.autoArrange != null && typeof flags.autoArrange !== "boolean") return false;
+    }
+    return true;
+  }
+
+  function generatePresetId() {
+    return `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
   function setupCanvasInteractions() {

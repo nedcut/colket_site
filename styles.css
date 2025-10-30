@@ -136,6 +136,20 @@ body[data-dragging="true"] {
   gap: 16px;
 }
 
+.panel-subsection {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.panel-subsection h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .field {
   display: grid;
   gap: 8px;

@@ -155,6 +155,25 @@
           <button type="button" class="btn ghost" data-preset="E">138″ · 10 seats</button>
           <button type="button" class="btn ghost" data-preset="F">129″ · 8 seats</button>
         </div>
+        <div class="panel-subsection">
+          <h3>Custom presets</h3>
+          <div class="field-stack">
+            <div class="field-row">
+              <input id="customPresetName" type="text" placeholder="Name this setup" autocomplete="off" />
+              <button id="savePresetBtn" type="button" class="btn">Save</button>
+            </div>
+            <div class="field">
+              <label for="savedPresetSelect">Saved presets</label>
+              <div class="field-row">
+                <select id="savedPresetSelect">
+                  <option value="">None saved yet</option>
+                </select>
+                <button id="loadPresetBtn" type="button" class="btn ghost" disabled>Load</button>
+                <button id="deletePresetBtn" type="button" class="btn ghost" disabled>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="panel-section">
