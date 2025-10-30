@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Colket Dining Table Layouts</title>
+  <link rel="preload" href="options.json" as="fetch" crossorigin="anonymous">
+  <link rel="stylesheet" href="styles.css">
+  <meta name="description" content="Tasteful, responsive viewer for Colket Dining Table SVG layouts with selectable configurations." />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Colket Dining Table Layouts</h1>
+    <p class="tagline">Select a configuration to preview the detailed, to-scale SVG drawing.</p>
+  </header>
+
+  <main class="content">
+    <aside class="controls" aria-label="Controls">
+      <div class="control-group">
+        <label for="layoutSelect">Configuration</label>
+        <select id="layoutSelect" aria-describedby="configHelp" disabled></select>
+        <p id="configHelp" class="help">Choose among table sizes and seating layouts.</p>
+      </div>
+
+      <div class="control-row">
+        <button id="fitBtn" class="btn" type="button" title="Fit drawing to window (F)" disabled>Fit</button>
+        <div class="zoom-wrap">
+          <label for="zoomRange">Zoom</label>
+          <input id="zoomRange" type="range" min="0.25" max="2.5" step="0.05" value="1" disabled />
+          <output id="zoomOut" for="zoomRange">100%</output>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <a id="openRaw" class="btn ghost" aria-disabled="true" tabindex="-1">Open SVG</a>
+        <a id="download" class="btn" aria-disabled="true" tabindex="-1">Download</a>
+      </div>
+
+      <details class="notes" open>
+        <summary>Notes</summary>
+        <ul>
+          <li>Scale: 1 in = 10 px.</li>
+          <li>chairs shown as 21″ wide (depth schematic).</li>
+          <li>Spacing along table sides is evenly distributed.</li>
+        </ul>
+      </details>
+    </aside>
+
+    <section class="stage-wrap">
+      <div id="stage" class="stage" data-state="loading" data-message="Loading configurations..." tabindex="0" aria-live="polite" aria-busy="true">
+        <img id="svgView" alt="Table layout drawing" hidden decoding="async" />
+        <noscript>This viewer requires JavaScript to load the table drawings.</noscript>
+      </div>
+      <div class="caption" id="caption" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <small>&copy; <span id="year"></span> Colket Dining Room — Layout visualizer</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

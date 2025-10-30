@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1160" viewBox="0 0 170 116">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444444"/>
+    </marker>
+    <style>
+      .table { fill:#cccccc; stroke:#333333; stroke-width:0.3; rx:1; ry:1; }
+      .chair { fill:#e6f2ff; stroke:#0d3b66; stroke-width:0.25; }
+      .dim   { stroke:#444444; stroke-width:0.2; fill:none; }
+      .dash  { stroke:#bbbbbb; stroke-width:0.15; stroke-dasharray:0.4 0.6; }
+      .label { font: 1.3px/1.3px Arial, Helvetica, sans-serif; fill:#222222; text-anchor:middle; }
+      .side  { font: 1.1px/1.1px Arial, Helvetica, sans-serif; fill:#222222; text-anchor:end; }
+      .title { font: 2.2px/2.2px Arial, Helvetica, sans-serif; font-weight:bold; fill:#222222; text-anchor:middle; }
+      .subtitle { font: 1.6px/1.6px Arial, Helvetica, sans-serif; fill:#222222; text-anchor:middle; }
+      .small { font: 1.0px/1.0px Arial, Helvetica, sans-serif; fill:#222222; text-anchor:end; }
+    </style>
+  </defs>
+
+  <text x="85" y="6" class="title">Colket Dining Table – Option A (Shortened)</text>
+  <text x="85" y="8.6" class="subtitle">102" × 48" with 6 chairs (2 per side, 1 per end)</text>
+
+  <rect class="table" x="34" y="34" width="102" height="48"/>
+
+  <!-- Length -->
+  <line class="dim" x1="34" y1="26" x2="136" y2="26" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <line class="dim" x1="34" y1="24.5" x2="34" y2="27.5"/>
+  <line class="dim" x1="136" y1="24.5" x2="136" y2="27.5"/>
+  <text class="label" x="85" y="24">Length: 102 in</text>
+
+  <!-- Width -->
+  <line class="dim" x1="26" y1="34" x2="26" y2="82" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <line class="dim" x1="24.5" y1="34" x2="27.5" y2="34"/>
+  <line class="dim" x1="24.5" y1="82" x2="27.5" y2="82"/>
+  <text class="side" x="24" y="58">Width: 48 in</text>
+
+  <line class="dash" x1="34" y1="24" x2="136" y2="24"/>
+
+  <!-- Long-side chairs: margin = (102 - 2*21)/3 = 20 -->
+  <!-- positions: x = 34+20=54, then 54+(21+20)=95 -->
+  <rect class="chair" x="54" y="10" width="21" height="21"/>
+  <rect class="chair" x="95" y="10" width="21" height="21"/>
+  <rect class="chair" x="54" y="85" width="21" height="21"/>
+  <rect class="chair" x="95" y="85" width="21" height="21"/>
+
+  <!-- End chairs at y=47.5 -->
+  <rect class="chair" x="10" y="47.5" width="21" height="21"/>
+  <rect class="chair" x="139" y="47.5" width="21" height="21"/> <!-- 102 + 37 -->
+
+  <text class="small" x="168" y="114">Scale: 10 px/in</text>
+  <text class="small" x="136" y="102">2 chairs/long side, 1/end; 21" seat width used; depth schematic.</text>
+</svg>
