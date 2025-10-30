@@ -205,6 +205,7 @@ input[type="range"]::-webkit-slider-thumb {
   border: none;
   cursor: pointer;
   box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.15);
+  margin-top: -6px; /* centers 16px thumb over 4px track */
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
