@@ -386,6 +386,17 @@
   }
 
   function capturePresetSnapshot() {
+    const manualPositions = Array.from(state.manual.positions.entries()).map(([id, pos]) => ({
+      id,
+      x: pos.x,
+      y: pos.y,
+    }));
+    const floatingChairs = Array.from(state.customChairs.entries()).map(([id, chair]) => ({
+      id,
+      x: chair.x,
+      y: chair.y,
+      rotation: chair.rotation ?? 0,
+    }));
     return {
       table: {
         shape: state.table.shape,
@@ -395,6 +406,10 @@
         leafLength: state.table.leafLength,
         leafCount: state.table.leafCount,
         unitsPerInch: state.table.unitsPerInch,
+        position: {
+          x: state.table.position.x,
+          y: state.table.position.y,
+        },
       },
       seating: {
         sideCount: state.seating.sideCount,
@@ -408,12 +423,16 @@
       flags: {
         autoArrange: state.flags.autoArrange,
       },
+      manual: {
+        positions: manualPositions,
+      },
+      customChairs: floatingChairs,
     };
   }
 
   function applyPresetSnapshot(snapshot) {
     if (!isValidPresetSnapshot(snapshot)) return;
-    const { table, seating, flags } = snapshot;
+    const { table, seating, flags, manual, customChairs } = snapshot;
     let touchedLayout = false;
 
     if (table) {
@@ -466,6 +485,17 @@
           state.table.unitsPerInch = next;
           scaleManualPositions(factor);
           touchedLayout = true;
+        }
+      }
+      if (table.position && typeof table.position === "object") {
+        const nextX = table.position.x;
+        const nextY = table.position.y;
+        if (Number.isFinite(nextX) && Number.isFinite(nextY)) {
+          if (state.table.position.x !== nextX || state.table.position.y !== nextY) {
+            state.table.position.x = nextX;
+            state.table.position.y = nextY;
+            touchedLayout = true;
+          }
         }
       }
     }
@@ -532,12 +562,52 @@
     state.manual.positions.clear();
     state.customChairs.clear();
     state.manual.selectedId = null;
+    let hasManualOverrides = false;
+
+    if (manual && typeof manual === "object" && Array.isArray(manual.positions)) {
+      manual.positions.forEach((entry) => {
+        if (!entry || typeof entry !== "object") return;
+        const { id, x, y } = entry;
+        if (typeof id !== "string") return;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        state.manual.positions.set(id, { x, y });
+      });
+      if (state.manual.positions.size > 0) {
+        hasManualOverrides = true;
+      }
+    }
+
+    let maxFloatingIndex = floatingCounter;
+
+    if (Array.isArray(customChairs)) {
+      customChairs.forEach((entry) => {
+        if (!entry || typeof entry !== "object") return;
+        const { id, x, y, rotation } = entry;
+        if (typeof id !== "string") return;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        const rot = Number.isFinite(rotation) ? rotation : 0;
+        state.customChairs.set(id, { id, x, y, rotation: rot });
+        const match = /^floating-(\d+)$/.exec(id);
+        if (match) {
+          const value = Number.parseInt(match[1], 10);
+          if (Number.isFinite(value)) {
+            maxFloatingIndex = Math.max(maxFloatingIndex, value);
+          }
+        }
+      });
+      if (state.customChairs.size > 0) {
+        hasManualOverrides = true;
+      }
+    }
+
+    floatingCounter = Math.max(floatingCounter, maxFloatingIndex);
     touchedLayout = true;
 
     syncControlValues();
 
     if (touchedLayout) {
-      triggerLayout();
+      const triggerOptions = hasManualOverrides ? { autoArrangeCandidate: false } : undefined;
+      triggerLayout(triggerOptions);
     } else {
       scheduleRender();
     }
@@ -587,7 +657,7 @@
 
   function isValidPresetSnapshot(candidate) {
     if (!candidate || typeof candidate !== "object") return false;
-    const { table, seating, flags } = candidate;
+    const { table, seating, flags, manual, customChairs } = candidate;
     if (!table || typeof table !== "object") return false;
     if (!seating || typeof seating !== "object") return false;
     const tableKeys = ["baseLength", "width", "cornerRadius", "leafLength", "leafCount", "unitsPerInch"];
@@ -597,6 +667,13 @@
       }
     }
     if (table.shape != null && typeof table.shape !== "string") return false;
+    if (table.position != null) {
+      if (typeof table.position !== "object") return false;
+      const { x, y } = table.position;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return false;
+      }
+    }
     const seatingKeys = ["sideCount", "endCount", "chairWidth", "chairDepth", "clearance", "sideOffset", "endOffset"];
     for (const key of seatingKeys) {
       if (seating[key] != null && typeof seating[key] !== "number") {
@@ -606,6 +683,26 @@
     if (flags != null) {
       if (typeof flags !== "object") return false;
       if (flags.autoArrange != null && typeof flags.autoArrange !== "boolean") return false;
+    }
+    if (manual != null) {
+      if (typeof manual !== "object") return false;
+      if (manual.positions != null) {
+        if (!Array.isArray(manual.positions)) return false;
+        for (const entry of manual.positions) {
+          if (!entry || typeof entry !== "object") return false;
+          if (typeof entry.id !== "string") return false;
+          if (!Number.isFinite(entry.x) || !Number.isFinite(entry.y)) return false;
+        }
+      }
+    }
+    if (customChairs != null) {
+      if (!Array.isArray(customChairs)) return false;
+      for (const entry of customChairs) {
+        if (!entry || typeof entry !== "object") return false;
+        if (typeof entry.id !== "string") return false;
+        if (!Number.isFinite(entry.x) || !Number.isFinite(entry.y)) return false;
+        if (entry.rotation != null && typeof entry.rotation !== "number") return false;
+      }
     }
     return true;
   }
